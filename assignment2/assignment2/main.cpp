@@ -55,7 +55,7 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float z
 	Eigen::Matrix4f scale;
 	scale << 1.0 / x_scale, 0, 0, 0,
 			 0, 1.0 / y_scale, 0, 0,
-			 0, 0, 2.0 / (zFar - zNear), 0,
+			 0, 0, 2.0 / (zNear - zFar), 0,
 			 0, 0, 0, 1.0;
 	projection = scale * translate * pers * projection;
 
