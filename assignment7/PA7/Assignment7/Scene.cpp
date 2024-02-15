@@ -61,58 +61,38 @@ bool Scene::trace(
 Vector3f Scene::castRay(const Ray &ray, int depth) const
 {
     // TO DO Implement Path Tracing Algorithm here
-    Vector3f L_dir = {0.0, 0.0, 0.0};
-    Vector3f L_indir = {0.0, 0.0, 0.0};
-    Intersection inter = Scene::intersect(ray);
-    if (!inter.happened)
+    Vector3f L_dir = Vector3f(0.0, 0.0, 0.0);
+    Vector3f L_indir = Vector3f(0.0, 0.0, 0.0);
+    Intersection point = Scene::intersect(ray);
+    if (!point.happened)
         return L_dir;
-    if (inter.m->hasEmission())
-    {
-        if (depth == 0) {
-            return inter.m->getEmission();
-        }
-        else
-            return L_dir;
-    }
-    Intersection light_pos;
-    float pdf_light = 0.0;
-    sampleLight(light_pos, pdf_light);
-
-    Vector3f p = inter.coords;
-    Vector3f N = normalize(inter.normal);
+    Vector3f p = point.coords;
+    Vector3f N = point.normal.normalized();
     Vector3f wo = ray.direction;
-
-    Vector3f xx = light_pos.coords;
-    Vector3f NN = normalize(light_pos.normal);
-    Vector3f ws = normalize(p - xx);
-    float dis = dotProduct(p - xx, p - xx);
-
-    Ray light_to_obj(xx, ws);
-    Intersection light_to_scene = Scene::intersect(light_to_obj);
-    float dis2 = dotProduct(light_to_scene.coords - xx, light_to_scene.coords - xx);
-    if (light_to_scene.happened && dis <= dis2)
+    Intersection light_pos;
+    float pdf = 0.0f;
+    sampleLight(light_pos, pdf);
+    Vector3f x = light_pos.coords;
+    Vector3f NN = light_pos.normal.normalized();
+    Vector3f emit = light_pos.emit;
+    Vector3f ws = (x - p).normalized();
+    Ray r = Ray(p, ws);
+    Intersection light_to_obj = Scene::intersect(r);
+	float dis = (p - x).norm();
+	float dis2 = light_to_obj.distance;
+    if (light_to_obj.happened && (dis2 - dis) > -EPSILON)
     {
-        Vector3f L_i = light_pos.emit;
-        Vector3f f_r = inter.m->eval(wo, -ws, N);
-        float cos_theta = dotProduct(-ws, N);
-        float cos_theta_l = dotProduct(ws, NN);
-        L_dir = L_i * f_r * cos_theta * cos_theta_l / dis / pdf_light;
+        L_dir = emit * point.m->eval(wo, ws, N) * dotProduct(ws, N) * dotProduct(-ws, NN)/ pdf / dotProduct(x - p, x - p);
     }
 
-    float ksi = get_random_float();//随机取[0,1]
-    if (ksi < RussianRoulette) {
-        
-        Vector3f wi = inter.m->sample(wo, N).normalized();
-        Ray r(p, wi);
-        Intersection obj_to_scene = Scene::intersect(r);
-        //击中了物体&&物体不是光源
-        if (obj_to_scene.happened && !obj_to_scene.m->hasEmission()) {
-            Vector3f f_r = inter.m->eval(wo, wi, N);//wo不参与计算
-            float cos_theta = dotProduct(wi, N);
-            float pdf_hemi = inter.m->pdf(wo, wi, N);
-            L_indir = castRay(r, depth + 1) * f_r * cos_theta / pdf_hemi / RussianRoulette;
-        }
+    float P_RR = get_random_float();
+    if (P_RR < RussianRoulette)
+    {
+        Vector3f wi = point.m->sample(wo, N).normalized();
+        Ray r1 = Ray(p, wi);
+        Intersection obj_to_obj = Scene::intersect(r1);
+        if (obj_to_obj.happened && !obj_to_obj.m->hasEmission())
+            L_indir = castRay(r1, depth + 1) * point.m->eval(wo, wi, N) * dotProduct(wi, N) / point.m->pdf(wo, wi, N) / RussianRoulette;
     }
-    return L_dir + L_indir;
-
+    return L_dir + L_indir + point.m->getEmission();
 }

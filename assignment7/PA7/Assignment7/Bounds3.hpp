@@ -96,38 +96,38 @@ inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& invDir,
     // invDir: ray direction(x,y,z), invDir=(1.0/x,1.0/y,1.0/z), use this because Multiply is faster that Division
     // dirIsNeg: ray direction(x,y,z), dirIsNeg=[int(x>0),int(y>0),int(z>0)], use this to simplify your logic
     // TODO test if ray bound intersects
-    float x_max = pMax.x;
-    float y_max = pMax.y;
-    float z_max = pMax.z;
     float x_min = pMin.x;
+    float x_max = pMax.x;
     float y_min = pMin.y;
+    float y_max = pMax.y;
     float z_min = pMin.z;
+    float z_max = pMax.z;
     if (!dirIsNeg[0])
     {
-        float temp = x_min;
-        x_min = x_max;
-        x_max = temp;
+        float temp = x_max;
+        x_max = x_min;
+        x_min = temp;
     }
     if (!dirIsNeg[1])
     {
-        float temp = y_min;
-        y_min = y_max;
-        y_max = temp;
+        float temp = y_max;
+        y_max = y_min;
+        y_min = temp;
     }
     if (!dirIsNeg[2])
     {
-        float temp = y_min;
-        y_min = y_max;
-        y_max = temp;
+        float temp = z_max;
+        z_max = z_min;
+        z_min = temp;
     }
-    float t_x_min = (x_min - ray.origin.x) * invDir.x;
-    float t_x_max = (x_max - ray.origin.x) * invDir.x;
-    float t_y_min = (y_min - ray.origin.y) * invDir.y;
-    float t_y_max = (y_max - ray.origin.y) * invDir.y;
-    float t_z_min = (z_min - ray.origin.z) * invDir.z;
-    float t_z_max = (z_max - ray.origin.z) * invDir.z;
-    float t_enter = std::max(t_x_min, std::max(t_y_min, t_z_min));
-    float t_exit = std::min(t_x_max, std::min(t_y_max, t_z_max));
+    float t_min_x = (x_min - ray.origin.x) * invDir.x;
+    float t_max_x = (x_max - ray.origin.x) * invDir.x;
+    float t_min_y = (y_min - ray.origin.y) * invDir.y;
+    float t_max_y = (y_max - ray.origin.y) * invDir.y;
+    float t_min_z = (z_min - ray.origin.z) * invDir.z;
+    float t_max_z = (z_max - ray.origin.z) * invDir.z;
+    float t_enter = std::max(t_min_x, std::max(t_min_y, t_min_z));
+    float t_exit = std::min(t_max_x, std::min(t_max_y, t_max_z));
     if (t_enter <= t_exit && t_exit >= 0)
         return true;
     else
